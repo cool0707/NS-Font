@@ -1,5 +1,8 @@
 Noto Sans CJK JP / Noto Serif CJK JP を MS ゴシック・MS P ゴシック・MS UI Gothic・MS 明朝・MS P 明朝と同じ文字サイズ・送り幅・余白・行メトリクスに調整したフォントです。
 
+MS 系にあって Noto CJK に字形がない文字（ラテン拡張・IPA・キリル拡張・数学記号・記号など 1,067 字）は、
+Noto Sans/Serif・Noto Sans Math・Noto Sans Symbols 等で補完し、ウェイトも合わせています。
+
 ## ダウンロード
 
 | ファイル | 内容 |

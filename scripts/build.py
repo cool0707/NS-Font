@@ -46,6 +46,7 @@ from fontTools.pens.recordingPen import RecordingPen  # noqa: E402
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 UPEM = 1000
+VERSION = "1.100"          # name ID 5 / head.fontRevision（リリースのタグ v1.100 と揃える）
 
 TARGETS = {
     # key: (MS 計測データ, Noto 原本ファイル(ウェイト置換用 {w}), 等幅か, 英名, 和名)
@@ -756,7 +757,8 @@ class Builder:
         full = fam if w == "Regular" else f"{fam} {w}"
         full_ja = fam_ja if w == "Regular" else f"{fam_ja} {w}"
         ps = fam.replace(" ", "") + "-" + w
-        version = "Version 1.000"
+        version = f"Version {VERSION}"
+        f["head"].fontRevision = float(VERSION)
         noto_copy = name.getDebugName(0) or ""
         src = os.path.basename(self.noto_path)
         copyright_ = (noto_copy + " Modified in 2026 by the NS-Font project "
