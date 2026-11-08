@@ -52,7 +52,7 @@ TARGETS = {
     "Mincho": ("MSMincho", "NotoSerifCJK-{w}.ttc", True, "NS Mincho", "NS 明朝"),
     "PMincho": ("MSPMincho", "NotoSerifCJK-{w}.ttc", False, "NS PMincho", "NS P明朝"),
 }
-DEFAULT_TARGETS = ["Gothic", "PGothic", "Mincho", "PMincho"]
+DEFAULT_TARGETS = ["Gothic", "PGothic", "UIGothic", "Mincho", "PMincho"]
 
 # グリフ毎の大きさ補正の上限（分類共通倍率からの ± 比率）
 SCALE_TOLERANCE = {

@@ -4,12 +4,27 @@ Noto Sans CJK JP / Noto Serif CJK JP を改造し、**MS ゴシック・MS P ゴ
 同じ文字サイズ・送り幅・余白・行メトリクス**になるよう調整したフォントです。
 字形は Noto のままで、レイアウト上の寸法（どこに・どの大きさで・どれだけ字送りするか）を MS 系に合わせています。
 
+### まとめ版（推奨）— 1 ファイルをインストールすると等幅・プロポーショナルの両方が使える
+
+| ファイル | 収録書体 | 原本 |
+|---|---|---|
+| `dist/NSGothic.ttc`（22 MB） | NS ゴシック / NS Pゴシック / NS UI Gothic | Noto Sans CJK JP |
+| `dist/NSMincho.ttc`（27 MB） | NS 明朝 / NS P明朝 | Noto Serif CJK JP |
+
+MS の `msgothic.ttc` / `msmincho.ttc` と同じ TrueType Collection 形式です。
+輪郭が同一のグリフ（漢字など）は書体間で共有しているため、個別 TTF を並べるより大幅に小さくなっています。
+
+### 個別版（TTC を扱えない環境向け）
+
 | ファイル | 書体名（英/和） | 原本 | 寸法の基準 |
 |---|---|---|---|
 | `dist/NSGothic-Regular.ttf` | NS Gothic / NS ゴシック | Noto Sans CJK JP | MS ゴシック（等幅） |
 | `dist/NSPGothic-Regular.ttf` | NS PGothic / NS Pゴシック | Noto Sans CJK JP | MS P ゴシック（プロポーショナル） |
+| `dist/NSUIGothic-Regular.ttf` | NS UI Gothic | Noto Sans CJK JP | MS UI Gothic（プロポーショナル） |
 | `dist/NSMincho-Regular.ttf` | NS Mincho / NS 明朝 | Noto Serif CJK JP | MS 明朝（等幅） |
 | `dist/NSPMincho-Regular.ttf` | NS PMincho / NS P明朝 | Noto Serif CJK JP | MS P 明朝（プロポーショナル） |
+
+※ まとめ版と個別版は同じ書体名なので、どちらか一方だけをインストールしてください。
 
 ライセンス: SIL Open Font License 1.1（`OFL.txt`）。
 **MS フォント本体はリポジトリに含めません**（`.gitignore` で `fonts/ms/`・`*.ttc` 等を除外）。
@@ -89,11 +104,12 @@ cp /path/to/msgothic.ttc /path/to/msmincho.ttc fonts/ms/
 # Noto CJK (OTC) を fonts/noto/ に置く
 scripts/fetch_noto.sh
 python3 scripts/analyze_ms.py          # MS 計測・分類
-python3 scripts/build.py -j 4          # 4 書体を dist/ に生成
+python3 scripts/build.py -j 4          # 5 書体を dist/ に生成
+python3 scripts/make_ttc.py            # dist/NSGothic.ttc, dist/NSMincho.ttc にまとめる
 python3 scripts/compare.py             # 検証（任意）
 ```
 
-- `python3 scripts/build.py UIGothic` で MS UI Gothic 相当（NS UI Gothic）も生成できます
+- `python3 scripts/make_ttc.py out.ttc a.ttf b.ttf ...` で任意の組み合わせの TTC も作れます
 - `--weights Regular,Bold` で Noto の Bold を原本にした太字も生成できます（寸法は MS の Regular に合わせます）
 
 ## 注意・制限
