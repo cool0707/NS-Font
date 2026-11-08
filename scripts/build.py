@@ -41,6 +41,8 @@ from nsfont.classify import (base_class, group_of, width_bucket, decompose_base,
                              BASELINE_GROUPS, EXACT_FIT_GROUPS)
 from nsfont.fontutil import open_face, single_subst_map  # noqa: E402
 from nsfont.coverage import keep_predicate, LAYOUT_FEATURES  # noqa: E402
+from nsfont.supplement import Supplement, embolden, stem_width  # noqa: E402
+from fontTools.pens.recordingPen import RecordingPen  # noqa: E402
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 UPEM = 1000
@@ -197,6 +199,7 @@ class Builder:
     def __init__(self, target, weight, args):
         self.target = target
         self.ms_key, noto_file, self.fixed, self.family, self.family_ja = TARGETS[target]
+        self.noto_family = noto_file.split("-")[0]
         self.weight = weight
         self.args = args
         with open(os.path.join(args.ms_data, self.ms_key + ".json")) as fp:
@@ -218,6 +221,9 @@ class Builder:
         self.src = {}
         self.remap_widths()
         self.split_shared()
+        self.supp = {}
+        if not self.args.no_supplement:
+            self.add_supplements()
         self.cmap = self.font.getBestCmap()
         self.owners = glyph_owners(
             self.font, prefer=lambda cp: (cp not in self.ms,
@@ -227,7 +233,7 @@ class Builder:
         self.bounds = {}
         for g in self.font.getGlyphOrder():
             bp = BoundsPen(self.gs)
-            self.gs[self.src.get(g, g)].draw(bp)
+            self.draw(g, bp)
             self.bounds[g] = Box(*bp.bounds) if bp.bounds else None
 
     def remap_widths(self):
@@ -295,6 +301,80 @@ class Builder:
         self.report["split_shared"] = len(new)
         log(self.target, "split shared glyphs", len(new))
 
+    def draw(self, g, pen):
+        if g in self.supp:
+            self.supp[g].draw(pen)
+        else:
+            self.gs[self.src.get(g, g)].draw(pen)
+
+    def add_supplements(self):
+        """MS にあって Noto CJK に無い文字を Noto 欧文・記号系フォントから補う。"""
+        cmap0 = self.font.getBestCmap()
+
+        def cjk_draw(ch):
+            g = cmap0.get(ord(ch))
+            return (lambda pen: self.gs[g].draw(pen)) if g else None
+
+        sup = Supplement(self.args.extra_dir, self.noto_family, cjk_draw)
+        # 字幅選択用: MS の字面幅を CJK の単位に戻すための概算倍率（「H」の高さの比）
+        h = self.ms.get(ord("H"))
+        hn = self.bounds_of(cmap0[ord("H")])
+        s_est = (h["yMax"] - h["yMin"]) * UPEM / (hn[3] - hn[1])
+        uni = [t for t in self.font["cmap"].tables if t.isUnicode()]
+        order = list(self.font.getGlyphOrder())
+        added, used = [], Counter()
+        for cp, r in sorted(self.ms.items()):
+            if cp in cmap0 or cp < 0x20:
+                continue
+            tw = (r["xMax"] - r["xMin"]) * UPEM / s_est if "xMin" in r else None
+            sg = sup.glyph(cp, tw)
+            if sg is None:
+                continue
+            name = f"supp.u{cp:04X}"
+            self.supp[name] = sg
+            self.hmtx[name] = (max(0, int(round(sg.adv))), 0)
+            self.vmtx[name] = (UPEM, 0)
+            for t in uni:
+                if cp <= 0xFFFF or t.format in (12, 13):
+                    t.cmap[cp] = name
+            added.append(name)
+            used[sg.source] += 1
+        self.font.setGlyphOrder(order + added)
+        self.report["supplement"] = {
+            "added": len(added),
+            "stem_target": {**{g: {c: round(v, 1) for c, v in t.items()} for g, t in sup.T.items()},
+                            "symbol(+)": round(sup.T_sym, 1)},
+            "scale": round(sup.k, 4),
+            "weights": {f: {"weight": w, "embolden": {g: round(x, 1) for g, x in d.items()}}
+                        for f, (w, d) in sup.choice.items()},
+            "sources": dict(used.most_common()),
+        }
+        log(self.target, "supplement", len(added),
+            {f: (w, {g: round(x, 1) for g, x in d.items()}) for f, (w, d) in sup.choice.items()})
+
+    def compensate(self, g, p, ops):
+        """横方向だけ縮めた (sx < sy) グリフは縦画が細くなるので、その分だけ縦画を横に太らせる。"""
+        if p.sx >= p.sy * 0.97 or p.sx <= 0 or p.how == "paired-exact":
+            return ops
+        cp = self.owners.get(g, (None,))[0]
+        if cp is not None and group_of(base_class(cp)) in EXACT_FIT_GROUPS:
+            return ops
+        rp = RecordingPen()
+        rp.value = ops
+        ws = [stem_width(rp.replay, f) for f in (0.25, 0.35, 0.45, 0.55)]
+        ws = [w for w in ws if w]
+        if not ws:
+            return ops
+        w = min(ws)
+        ex = min((p.sy - p.sx) * w / 2 / p.sx, w * 0.5)
+        sign = 1 if g in self.supp else -1          # CFF (Noto CJK) は輪郭の向きが逆
+        return embolden(ops, sign * ex, 1.0, 0.0)
+
+    def bounds_of(self, g):
+        bp = BoundsPen(self.gs)
+        self.gs[g].draw(bp)
+        return bp.bounds
+
     def nbucket(self, g):
         return width_bucket(self.hmtx[g][0], UPEM)
 
@@ -315,12 +395,13 @@ class Builder:
                 return v, k
         return None, None
 
-    def pairs(self):
-        """MS にもある cmap グリフの対応 (cp, glyph, MS 記録, Noto 枠, MS 枠)"""
+    def pairs(self, stats=True):
+        """MS にもある cmap グリフの対応 (cp, glyph, MS 記録, Noto 枠, MS 枠)
+        stats=True のときは分類統計用なので、補完フォント由来のグリフを除く。"""
         out = []
         for cp, g in self.cmap.items():
             r = self.ms.get(cp)
-            if r is None:
+            if r is None or (stats and g in self.supp):
                 continue
             out.append((cp, g, r, self.bounds.get(g), ms_box(r)))
         return out
@@ -370,8 +451,9 @@ class Builder:
         return st["s"], (dy if dy is not None else 0.0)
 
     # ---- グリフ毎の変換 -----------------------------------------------------
-    def plan_paired(self, g, cp, r, role_rec):
-        """MS に対応字があるグリフ。role_rec は MS 側の計測（cmap または vert 字形）。"""
+    def plan_paired(self, g, cp, r, role_rec, base=None):
+        """MS に対応字があるグリフ。role_rec は MS 側の計測（cmap または vert 字形）。
+        base はアクセント付き文字の基底文字の変換（大きさ・ベースラインをそれに揃える）。"""
         cls = r["cls"]
         grp = group_of(cls)
         b = role_rec_bucket = width_bucket(role_rec["adv"] * UPEM, UPEM)
@@ -390,15 +472,23 @@ class Builder:
             return Plan(sx, sy, mb.x0 - sx * nb.x0, mb.y0 - sy * nb.y0, adv, vadv,
                         vorg_ms, "paired-exact")
         tol = SCALE_TOLERANCE.get(grp, 0.10)
-        base = s * nb.maxdim
-        f = clamp(mb.maxdim / base, 1 - tol, 1 + tol) if base > 20 and mb.maxdim > 20 else 1.0
-        sy = sx = s * f
+        if base is not None:
+            # アクセントの高さは Noto と MS で違うので、字面全体ではなく基底文字の倍率を使う
+            sy = sx = base.sy
+        else:
+            ref = s * nb.maxdim
+            f = clamp(mb.maxdim / ref, 1 - tol, 1 + tol) if ref > 20 and mb.maxdim > 20 else 1.0
+            sy = sx = s * f
         # 字面幅が MS より大きく溢れる場合は横方向のみ詰める（最大 25%）
         limit = mb.w + 0.02 * UPEM
         if sx * nb.w > limit and nb.w > 0:
-            sx = max(limit / nb.w, sy * 0.75)
+            # 補完グリフは既に幅の狭い字形 (Condensed 系) を選んでいるので詰め幅を少し広く許す
+            sx = max(limit / nb.w, sy * (0.65 if g in self.supp else 0.75))
         tx = mb.cx - sx * nb.cx
-        if grp in BASELINE_GROUPS:
+        if base is not None:
+            ty = base.ty
+            how = "paired-accented"
+        elif grp in BASELINE_GROUPS:
             ty = dy_base
             how = "paired-baseline"
         else:
@@ -473,14 +563,25 @@ class Builder:
         self.class_scale()
         plans = {}
         # (a) MS に対応がある cmap / vert グリフ
+        accented = []
         for g, (cp, role, feat) in self.owners.items():
             r = self.ms.get(cp)
             if r is None:
                 continue
             if role == "cmap":
+                bcp = decompose_base(cp, canonical=True)
+                bg = self.cmap.get(bcp) if bcp else None
+                if bg and bg != g and bcp in self.ms and group_of(r["cls"]) in BASELINE_GROUPS:
+                    accented.append((g, cp, r, bg))
+                    continue
                 plans[g] = self.plan_paired(g, cp, r, r)
             elif role == "vert" and "vert" in r:
                 plans[g] = self.plan_paired(g, cp, r, r["vert"])
+        # アクセント付き文字（MS 収録）は基底文字の変換を確定させてから
+        for g, cp, r, bg in sorted(accented, key=lambda x: x[1]):
+            q = plans.get(bg)
+            ok = q is not None and q.how.startswith("paired") and q.how != "paired-empty"
+            plans[g] = self.plan_paired(g, cp, r, r, base=q if ok else None)
         # (a') 縦書き用字形が縦書き専用文字 (U+FE11 等) の cmap と共有されている場合も、
         #      MS 側に縦書き用字形の計測があればそちらを優先する
         vmap = single_subst_map(self.font, {"vert", "vrt2"})
@@ -535,9 +636,13 @@ class Builder:
         for g in order:
             p = self.plans[g]
             pen = TTGlyphPen(None)
-            tp = TransformPen(Cu2QuPen(pen, max_err=0.5, reverse_direction=True),
+            tp = TransformPen(Cu2QuPen(pen, max_err=0.5, reverse_direction=g not in self.supp),
                               (p.sx, 0, 0, p.sy, p.tx, p.ty))
-            self.gs[self.src.get(g, g)].draw(tp)
+            rp = RecordingPen()
+            self.draw(g, rp)
+            ops = self.compensate(g, p, rp.value)
+            rp.value = ops
+            rp.replay(tp)
             gl = pen.glyph()
             gl.recalcBounds(glyf)
             glyf.glyphs[g] = gl
@@ -739,6 +844,9 @@ def main():
     ap.add_argument("--full", action="store_true",
                     help="漢字を日本語向けに絞らず Noto の全収録字（ハングル除く）を残す")
     ap.add_argument("--noto-dir", default=os.path.join(ROOT, "fonts", "noto"))
+    ap.add_argument("--extra-dir", default=os.path.join(ROOT, "fonts", "noto-extra"),
+                    help="補完用の Noto 欧文・記号系フォント (NotoSans-*.ttf 等) の場所")
+    ap.add_argument("--no-supplement", action="store_true", help="補完を行わない")
     ap.add_argument("--ms-data", default=os.path.join(ROOT, "build", "ms"))
     ap.add_argument("--out", default=os.path.join(ROOT, "build", "ttf"),
                     help="TTF の出力先（配布用の整理は scripts/package.py）")

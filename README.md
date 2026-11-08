@@ -73,6 +73,31 @@ Noto にある全ウェイト（ゴシック 7 段階・明朝 7 段階）を、
 これで 1 書体あたり約 5〜7 MB になり、全ウェイト入りの TTC も GitHub の 1 ファイル上限（100 MB）に収まります。
 Noto の全収録字を残したい場合は `scripts/build.py --full` でビルドできます（1 書体約 19〜26 MB）。
 
+### Noto 欧文・記号系フォントによる補完
+
+MS 系にあって Noto CJK に字形がない 1,070 字のうち **1,067 字** を、同じ OFL ライセンスの Noto フォントから補っています
+（`scripts/nsfont/supplement.py`）。補完した字も MS の送り幅・字面位置に合わせています。
+
+| 補完元 | 主な文字 |
+|---|---|
+| Noto Sans / Noto Serif（明朝系） | ラテン拡張 A（Ą Č Ğ Ł Ő Ř Ş …）、IPA 発音記号、キリル拡張（Ђ Є І Ї Љ …）、ギリシャ（アクセント付き）、上付き・下付き数字、分数 |
+| Noto Sans Math | 数学記号（∄ ∯ ≇ …）、矢印、文字様記号（ℂ ℝ ℤ …） |
+| Noto Sans Symbols / Symbols2 | 記号（☑ ☠ ☺ …）、幾何学模様（► ◘ …） |
+| Noto Sans/Serif Bengali・Thai・Khmer、Noto Sans Arabic / Naskh Arabic | 通貨記号 ৳ ฿ ៛ ﷼ |
+
+- **ウェイト合わせ**: CJK 側の欧文の縦画（大文字 L H E I T / 小文字 l n h i m、記号は「+」）の太さを実測し、
+  補完フォントの 9 段階のウェイトから最も近いものを選択。残る差と、Regular しかない Math / Symbols2 の差は
+  輪郭を法線方向にずらす太らせ/細らせ処理で補正（大文字・小文字で別々に補正）
+- **大きさ**: 補完フォントの「H」の高さを CJK 側の「H」に揃えたうえで、MS の字面に合わせる
+- **字幅**: 等幅版の半角に入りきらない字形は、Noto Sans/Serif の SemiCondensed → Condensed → ExtraCondensed から幅の合うものを選ぶ
+- 補完できないのは ㌬ など 3 字（いずれの Noto フォントにも字形がない、または制御文字）
+- 補完をしない場合は `build.py --no-supplement`
+
+あわせて、次の 2 点を CJK 側の既存文字も含めて改善しています。
+
+- MS 収録のアクセント付き文字（À È Ĺ ñ …）は、基底文字（A E L n …）と同じ倍率・ベースラインで変換（以前はアクセント込みの高さで合わせていたため本体が約 13% 小さかった）
+- 半角に収めるために横だけ縮めた字は、縮めた分だけ縦画を横方向に太らせて線の太さを揃える
+
 ライセンス: SIL Open Font License 1.1（`OFL.txt`）。
 **MS フォント本体はリポジトリに含めません**（`.gitignore` で `fonts/ms/`・`*.ttc` 等を除外）。
 ビルドには手元の Windows からコピーした `msgothic.ttc` / `msmincho.ttc` が必要です。
@@ -132,14 +157,18 @@ MS 収録字について送り幅と字面枠を比較した結果（字面枠�
 | グループ | 字数 | 送り幅一致 | Gothic ずれ中央値 | PGothic | Mincho | PMincho |
 |---|---:|---:|---:|---:|---:|---:|
 | kanji | 13160 | 100% | 0.006em | 0.006em | 0.010em | 0.010em |
-| kana | 205 | 100% | 0.010em | 0.010em | 0.012em | 0.012em |
-| hw_kana | 63 | 100% | 0.008em | 0.049em | 0.010em | 0.034em |
-| latin | 294 | 100% | 0.013em | 0.027em | 0.021em | 0.015em |
-| cjk_punct | 86 | 100% | 0.023em | 0.019em | 0.010em | 0.010em |
-| symbol | 438 | 100% | 0.006em | 0.006em | 0.010em | 0.010em |
+| kana | 205 | 100% | 0.011em | 0.012em | 0.013em | 0.013em |
+| hw_kana | 63 | 100% | 0.008em | 0.049em | 0.013em | 0.034em |
+| latin | 681 | 100% | 0.059em | 0.041em | 0.037em | 0.036em |
+| fw_latin | 62 | 100% | 0.034em | 0.035em | 0.020em | 0.021em |
+| latin_symbol | 219 | 100% | 0.017em | 0.019em | 0.017em | 0.017em |
+| cjk_punct | 86 | 100% | 0.023em | 0.020em | 0.014em | 0.014em |
+| cjk_symbol | 481 | 100% | 0.006em | 0.006em | 0.007em | 0.007em |
+| symbol | 991 | 100% | 0.016em | 0.015em | 0.015em | 0.015em |
 | box | 150 | 100% | 0.000em | 0.000em | 0.000em | 0.000em |
 
-残るずれは字形デザインそのものの違い（例: 「W」の幅、半角カナの字形）によるものです。
+残るずれは字形デザインそのものの違い（例: 「W」の幅、半角カナの字形、アクセント記号の高さ）によるものです。
+latin・symbol には Noto 欧文・記号系フォントで補完した字を含みます。送り幅は全 35 書体（5 種 × 7 ウェイト）で MS と一致しています。
 `scripts/compare.py` は MS（赤）と生成フォント（青）を重ね描きした画像も `build/compare/` に出力します。
 
 ## ビルド手順
@@ -148,7 +177,7 @@ MS 収録字について送り幅と字面枠を比較した結果（字面枠�
 pip install -r requirements.txt
 # MS フォント（Windows の C:\Windows\Fonts からコピー）を置く。コミットされません
 cp /path/to/msgothic.ttc /path/to/msmincho.ttc fonts/ms/
-# Noto CJK (OTC) を fonts/noto/ に置く
+# Noto CJK (OTC) を fonts/noto/、補完用 Noto を fonts/noto-extra/ に置く
 scripts/fetch_noto.sh
 python3 scripts/analyze_ms.py          # MS 計測・分類
 python3 scripts/build.py -j 4          # 5 種 × 7 ウェイト = 35 書体を build/ttf/ に生成
@@ -161,8 +190,8 @@ python3 scripts/compare.py             # 検証（任意）
 
 ## 注意・制限
 
-- MS 系に収録されていて Noto CJK に字形がない文字が約 1,070 字あります
-  （ラテン拡張 A の一部〔Ą Č Ğ Ł Ő Ř Ş など〕、IPA、キリル拡張、一部の数学記号・矢印など）。これらは収録されません
+- MS 系に収録されていて Noto CJK に字形がない文字は、上記のとおり Noto 欧文・記号系フォントで補完しています（デザインは Noto Sans/Serif 等のもの）。
+  Math と Symbols2 は Regular しかないため、他のウェイトは輪郭の太らせ/細らせで近づけています
 - ヒンティングなし（unhinted）の TrueType です。MS フォントの埋め込みビットマップに相当するものもありません
 - 送り幅を変更したため、Noto の GPOS（palt/kern/vpal 等の詰め情報）は削除しています（MS 系も同様の詰め情報は持っていません）
 - 書体名から “Noto” は外しています（改変版であることを明確にするため）

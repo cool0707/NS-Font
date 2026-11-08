@@ -165,10 +165,11 @@ def width_bucket(adv: float, upem: float) -> str:
     return "P"
 
 
-def decompose_base(cp: int):
-    """アクセント付き欧文などを基底文字に分解する（無ければ None）。"""
+def decompose_base(cp: int, canonical=False):
+    """アクセント付き欧文などを基底文字に分解する（無ければ None）。
+    canonical=True なら <wide> <super> などの互換分解は対象外。"""
     d = unicodedata.decomposition(chr(cp))
-    if not d:
+    if not d or (canonical and d.startswith("<")):
         return None
     parts = [p for p in d.split() if not p.startswith("<")]
     if not parts:

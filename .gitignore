@@ -11,6 +11,7 @@ build/
 
 # ダウンロードした Noto 原本（再取得可能・大容量）
 fonts/noto/
+fonts/noto-extra/
 
 
 __pycache__/
