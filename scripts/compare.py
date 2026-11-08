@@ -104,7 +104,7 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("targets", nargs="*", default=["Gothic", "PGothic", "Mincho", "PMincho"])
     ap.add_argument("--ms-dir", default=os.path.join(ROOT, "fonts", "ms"))
-    ap.add_argument("--dist", default=os.path.join(ROOT, "dist"))
+    ap.add_argument("--dist", default=os.path.join(ROOT, "build", "ttf"))
     ap.add_argument("--out", default=os.path.join(ROOT, "build", "compare"))
     args = ap.parse_args()
     os.makedirs(args.out, exist_ok=True)

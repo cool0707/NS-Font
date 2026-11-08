@@ -40,6 +40,7 @@ from fontTools.pens.cu2quPen import Cu2QuPen  # noqa: E402
 from nsfont.classify import (base_class, group_of, width_bucket, decompose_base,  # noqa: E402
                              BASELINE_GROUPS, EXACT_FIT_GROUPS)
 from nsfont.fontutil import open_face, single_subst_map  # noqa: E402
+from nsfont.coverage import keep_predicate, LAYOUT_FEATURES  # noqa: E402
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 UPEM = 1000
@@ -54,15 +55,26 @@ TARGETS = {
 }
 DEFAULT_TARGETS = ["Gothic", "PGothic", "UIGothic", "Mincho", "PMincho"]
 
+# Noto CJK にあるウェイト（.ttc のファイル名）
+WEIGHTS = {
+    "NotoSansCJK": ["Thin", "Light", "DemiLight", "Regular", "Medium", "Bold", "Black"],
+    "NotoSerifCJK": ["ExtraLight", "Light", "Regular", "Medium", "SemiBold", "Bold", "Black"],
+}
+
+
+def weights_for(target, spec):
+    """--weights の指定 (all / Regular,Bold など) を書体ごとのウェイト列に展開する。"""
+    avail = WEIGHTS[TARGETS[target][1].split("-")[0]]
+    if spec == "all":
+        return list(avail)
+    return [w for w in spec.split(",") if w in avail]
+
 # グリフ毎の大きさ補正の上限（分類共通倍率からの ± 比率）
 SCALE_TOLERANCE = {
     "kanji": 0.05, "kana": 0.08, "hw_kana": 0.08, "latin": 0.08, "fw_latin": 0.15,
     "cjk_punct": 0.15, "cjk_symbol": 0.10, "latin_symbol": 0.15, "symbol": 0.12,
 }
 MIN_SAMPLES = 3
-
-HANGUL = [(0x1100, 0x11FF), (0x3130, 0x318F), (0xA960, 0xA97F), (0xAC00, 0xD7FF),
-          (0xFFA0, 0xFFDC)]
 
 
 def log(*a):
@@ -81,12 +93,11 @@ def clamp(v, lo, hi):
 # --------------------------------------------------------------------------
 # 1. 原本の準備
 # --------------------------------------------------------------------------
-def load_noto(path):
+def load_noto(path, keep_cp, features):
     font = open_face(path, "CJK JP")
-    keep = [cp for cp in font.getBestCmap()
-            if not any(lo <= cp <= hi for lo, hi in HANGUL)]
+    keep = [cp for cp in font.getBestCmap() if keep_cp(cp)]
     opts = subset.Options()
-    opts.layout_features = ["*"]
+    opts.layout_features = features
     opts.name_IDs = ["*"]
     opts.name_languages = ["*"]
     opts.notdef_outline = True
@@ -198,7 +209,8 @@ class Builder:
     # ---- 原本 -------------------------------------------------------------
     def prepare(self):
         log(self.target, self.weight, "load+subset", self.noto_path)
-        self.font = load_noto(self.noto_path)
+        self.font = load_noto(self.noto_path, keep_predicate(self.args.ms_data, self.args.full),
+                              ["*"] if self.args.full else LAYOUT_FEATURES)
         self.gs = self.font.getGlyphSet()
         self.hmtx = self.font["hmtx"]
         self.vmtx = self.font["vmtx"]
@@ -629,10 +641,16 @@ class Builder:
     def set_names(self):
         f = self.font
         name = f["name"]
-        bold = self.weight.lower() == "bold"
-        sub = "Bold" if bold else "Regular"
+        w = self.weight
+        ribbi = w in ("Regular", "Bold")          # Regular/Bold は同一ファミリーとしてスタイルリンク
+        bold = w == "Bold"
         fam, fam_ja = self.family, self.family_ja
-        ps = fam.replace(" ", "") + "-" + sub
+        fam1 = fam if ribbi else f"{fam} {w}"
+        fam1_ja = fam_ja if ribbi else f"{fam_ja} {w}"
+        sub = w if ribbi else "Regular"
+        full = fam if w == "Regular" else f"{fam} {w}"
+        full_ja = fam_ja if w == "Regular" else f"{fam_ja} {w}"
+        ps = fam.replace(" ", "") + "-" + w
         version = "Version 1.000"
         noto_copy = name.getDebugName(0) or ""
         src = os.path.basename(self.noto_path)
@@ -642,16 +660,20 @@ class Builder:
         lic_url = name.getDebugName(14) or "https://openfontlicense.org"
         name.names = []
         recs = {
-            0: copyright_, 1: fam, 2: sub, 3: f"{version};NS-Font;{ps}", 4: f"{fam} {sub}" if bold else fam,
+            0: copyright_, 1: fam1, 2: sub, 3: f"{version};NS-Font;{ps}", 4: full,
             5: f"{version}; based on {src}", 6: ps, 13: lic, 14: lic_url,
         }
         for nid, s in recs.items():
             name.setName(s, nid, 3, 1, 0x409)
-        name.setName(fam_ja, 1, 3, 1, 0x411)
+        if not ribbi:
+            name.setName(fam, 16, 3, 1, 0x409)
+            name.setName(w, 17, 3, 1, 0x409)
+            name.setName(fam_ja, 16, 3, 1, 0x411)
+            name.setName(w, 17, 3, 1, 0x411)
+        name.setName(fam1_ja, 1, 3, 1, 0x411)
         name.setName(sub, 2, 3, 1, 0x411)
-        name.setName(f"{fam_ja} {sub}" if bold else fam_ja, 4, 3, 1, 0x411)
-        os2 = f["OS/2"]
-        os2.usWeightClass = 700 if bold else 400
+        name.setName(full_ja, 4, 3, 1, 0x411)
+        os2 = f["OS/2"]                        # usWeightClass は Noto 原本の値 (100〜900) を継承
         os2.fsSelection = (os2.fsSelection & ~0b1100001) | (0b100000 if bold else 0b1000000)
         f["head"].macStyle = 1 if bold else 0
 
@@ -693,11 +715,13 @@ class Builder:
         self.plan_all()
         self.finalize()
         os.makedirs(self.args.out, exist_ok=True)
-        fn = self.family.replace(" ", "") + "-" + ("Bold" if self.weight.lower() == "bold" else "Regular")
+        fn = self.family.replace(" ", "") + "-" + self.weight
         path = os.path.join(self.args.out, fn + ".ttf")
         log(self.target, "save", path)
         self.font.save(path)
-        self.write_report(self.args.docs)
+        # 変換パラメータの報告は Regular のみ docs/ に置く（他ウェイトは build/reports/）
+        self.write_report(self.args.docs if self.weight == "Regular"
+                          else os.path.join(ROOT, "build", "reports"))
         log(self.target, "done")
         return path
 
@@ -710,14 +734,20 @@ def _run(job):
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("targets", nargs="*", default=DEFAULT_TARGETS, help=f"{list(TARGETS)}")
-    ap.add_argument("--weights", default="Regular", help="Regular,Bold など（Noto の .ttc 名）")
+    ap.add_argument("--weights", default="all",
+                    help="all（Noto にある全ウェイト）または Regular,Bold など")
+    ap.add_argument("--full", action="store_true",
+                    help="漢字を日本語向けに絞らず Noto の全収録字（ハングル除く）を残す")
     ap.add_argument("--noto-dir", default=os.path.join(ROOT, "fonts", "noto"))
     ap.add_argument("--ms-data", default=os.path.join(ROOT, "build", "ms"))
-    ap.add_argument("--out", default=os.path.join(ROOT, "dist"))
+    ap.add_argument("--out", default=os.path.join(ROOT, "build", "ttf"),
+                    help="TTF の出力先（配布用の整理は scripts/package.py）")
     ap.add_argument("--docs", default=os.path.join(ROOT, "docs"))
     ap.add_argument("-j", "--jobs", type=int, default=1)
     args = ap.parse_args()
-    jobs = [(t, w, args) for t in args.targets for w in args.weights.split(",")]
+    jobs = [(t, w, args) for t in args.targets for w in weights_for(t, args.weights)]
+    # 時間のかかる明朝から先に流す
+    jobs.sort(key=lambda j: "Serif" not in TARGETS[j[0]][1])
     if args.jobs > 1:
         from multiprocessing import Pool
         with Pool(args.jobs) as pool:

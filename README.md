@@ -4,27 +4,56 @@ Noto Sans CJK JP / Noto Serif CJK JP を改造し、**MS ゴシック・MS P ゴ
 同じ文字サイズ・送り幅・余白・行メトリクス**になるよう調整したフォントです。
 字形は Noto のままで、レイアウト上の寸法（どこに・どの大きさで・どれだけ字送りするか）を MS 系に合わせています。
 
-### まとめ版（推奨）— 1 ファイルをインストールすると等幅・プロポーショナルの両方が使える
+Noto にある全ウェイト（ゴシック 7 段階・明朝 7 段階）を、それぞれ MS 系の寸法に合わせて作っています。
 
-| ファイル | 収録書体 | 原本 |
-|---|---|---|
-| `dist/NSGothic.ttc`（22 MB） | NS ゴシック / NS Pゴシック / NS UI Gothic | Noto Sans CJK JP |
-| `dist/NSMincho.ttc`（27 MB） | NS 明朝 / NS P明朝 | Noto Serif CJK JP |
+## 配布ファイル
 
-MS の `msgothic.ttc` / `msmincho.ttc` と同じ TrueType Collection 形式です。
-輪郭が同一のグリフ（漢字など）は書体間で共有しているため、個別 TTF を並べるより大幅に小さくなっています。
+### `dist/Regular/` — レギュラーのみ
 
-### 個別版（TTC を扱えない環境向け）
+| ファイル | 内容 |
+|---|---|
+| `NSGothic-Regular.ttf` | NS ゴシック（等幅） |
+| `NSPGothic-Regular.ttf` | NS Pゴシック（プロポーショナル） |
+| `NSGothic-NSPGothic-Regular.ttc` | NS ゴシック + NS Pゴシック（1 ファイルで両方入る） |
+| `NSUIGothic-Regular.ttf` | NS UI Gothic（MS UI Gothic 相当。元から等幅版はなし） |
+| `NSMincho-Regular.ttf` | NS 明朝（等幅） |
+| `NSPMincho-Regular.ttf` | NS P明朝（プロポーショナル） |
+| `NSMincho-NSPMincho-Regular.ttc` | NS 明朝 + NS P明朝 |
 
-| ファイル | 書体名（英/和） | 原本 | 寸法の基準 |
-|---|---|---|---|
-| `dist/NSGothic-Regular.ttf` | NS Gothic / NS ゴシック | Noto Sans CJK JP | MS ゴシック（等幅） |
-| `dist/NSPGothic-Regular.ttf` | NS PGothic / NS Pゴシック | Noto Sans CJK JP | MS P ゴシック（プロポーショナル） |
-| `dist/NSUIGothic-Regular.ttf` | NS UI Gothic | Noto Sans CJK JP | MS UI Gothic（プロポーショナル） |
-| `dist/NSMincho-Regular.ttf` | NS Mincho / NS 明朝 | Noto Serif CJK JP | MS 明朝（等幅） |
-| `dist/NSPMincho-Regular.ttf` | NS PMincho / NS P明朝 | Noto Serif CJK JP | MS P 明朝（プロポーショナル） |
+### `dist/AllWeights/` — Noto にある全ウェイト入り
 
-※ まとめ版と個別版は同じ書体名なので、どちらか一方だけをインストールしてください。
+| ファイル | 内容 |
+|---|---|
+| `NSGothic-AllWeights.ttc` | NS ゴシック（等幅）× 7 ウェイト |
+| `NSPGothic-AllWeights.ttc` | NS Pゴシック × 7 ウェイト |
+| `NSGothic-NSPGothic-AllWeights.ttc` | 等幅 + プロポーショナル × 7 ウェイト |
+| `NSUIGothic-AllWeights.ttc` | NS UI Gothic × 7 ウェイト |
+| `NSMincho-AllWeights.ttc` | NS 明朝（等幅）× 7 ウェイト |
+| `NSPMincho-AllWeights.ttc` | NS P明朝 × 7 ウェイト |
+| `NSMincho-NSPMincho-AllWeights.ttc` | 等幅 + プロポーショナル × 7 ウェイト |
+
+ウェイト:
+
+| 系統 | ウェイト（usWeightClass） |
+|---|---|
+| ゴシック・UI | Thin (100) / Light (300) / DemiLight (350) / Regular (400) / Medium (500) / Bold (700) / Black (900) |
+| 明朝 | ExtraLight (200) / Light (300) / Regular (400) / Medium (500) / SemiBold (600) / Bold (700) / Black (900) |
+
+- Regular と Bold は同じファミリー（例: 「NS ゴシック」）としてリンクしているので、アプリの太字ボタンで Bold が使われます
+- それ以外のウェイトは「NS ゴシック Light」のような別名のファミリーとして一覧に出ます（Windows の標準的な扱い）
+- 寸法（送り幅・余白・行の高さ）はすべてのウェイトで MS 系 Regular の値に合わせています。MS 系に太字はなく、Windows が擬似的に太らせています
+- TTC 内では同じウェイトの等幅/プロポーショナル間で同一の字形（漢字など）を共有しているため、単体を並べるよりサイズが小さくなります
+
+**同じ書体名が重複するので、インストールするのはいずれか 1 組だけにしてください**
+（例: `NSGothic-NSPGothic-AllWeights.ttc` を入れたら、`Regular/` のゴシック系や `NSGothic-AllWeights.ttc` は入れない）。
+
+## 収録字
+
+漢字は日本語向けに絞っています: **MS 系の収録漢字 ∪ JIS X 0213（第 1〜4 水準）∪ CP932** の 13,160 字（Noto CJK JP の 30,289 字のうち主に中国語用の漢字を除外）。
+仮名・記号・欧文・ギリシャ・キリルなど漢字以外は Noto にあるものを残しています（ハングルは除外）。
+異体字切替（`jp78`/`jp83`/`aalt`/`nlck`/`hist`）用の字形も除いています（`jp90`・縦書き・半角/全角切替は残しています）。
+これで 1 書体あたり約 5〜7 MB になり、全ウェイト入りの TTC も GitHub の 1 ファイル上限（100 MB）に収まります。
+Noto の全収録字を残したい場合は `scripts/build.py --full` でビルドできます（1 書体約 19〜26 MB）。
 
 ライセンス: SIL Open Font License 1.1（`OFL.txt`）。
 **MS フォント本体はリポジトリに含めません**（`.gitignore` で `fonts/ms/`・`*.ttc` 等を除外）。
@@ -36,7 +65,7 @@ MS の `msgothic.ttc` / `msmincho.ttc` と同じ TrueType Collection 形式で�
 |---|---|
 | 行メトリクス | ascent 0.859em / descent 0.141em / lineGap 0（hhea・OS/2 typo・win すべて MS と同値）。Noto 原本は 1.160/0.288em で行が高い |
 | em 枠 | 全角字の em 枠を MS と同じ y = -0.141〜0.859em に移動（Noto は -0.12〜0.88em） |
-| 送り幅 | MS 収録字はすべて MS と同じ値（4 書体とも一致率 100%） |
+| 送り幅 | MS 収録字はすべて MS と同じ値（全書体・全ウェイトで一致率 100%） |
 | 字面の大きさ・位置・左右余白 | MS 収録字は MS の字面枠に合わせる（下記） |
 | 縦書き | 縦送り・縦書き原点（tsb）を MS と同値に。縦書き用字形 (vert) も MS の縦書き用字形の位置に合わせる |
 | その他 | xAvgCharWidth、x ハイト/キャップハイト、下線・取消線の位置と太さ、isFixedPitch、PANOSE の bProportion、BASE の基準線 |
@@ -59,7 +88,7 @@ MS ゴシック / MS P ゴシック / MS UI ゴシック / MS 明朝 / MS P 明�
 
 ### 2. Noto の変形（`scripts/build.py`）
 
-1. Noto CJK の JP 書体を取り出し、ハングルを除いてサブセット化（約 33,000 字 / 51,000 グリフ）
+1. Noto CJK の JP 書体を取り出し、上記「収録字」の範囲にサブセット化（約 15,700 字 / 16,300 グリフ）
 2. 等幅版では、MS 側で半角/全角の文字は Noto の `hwid`/`fwid` 字形（半角用・全角用にデザインされた字形）を既定字形にする
    （例: 英数字は Noto の半角用字形を使う）
 3. 各グリフがどの文字の、どの役割（通常 / 縦書き用 / 異体字など）の字形かを GSUB から求める
@@ -71,7 +100,7 @@ MS ゴシック / MS P ゴシック / MS UI ゴシック / MS 明朝 / MS P 明�
    - 罫線・ブロック要素は隣の字とつながるよう MS の字面枠に完全一致
 5. **MS にないグリフ** — 似た分類の値を使う
    - アクセント付き欧文 → 基底文字（例: Ž → Z）の値
-   - 異体字（jp78/jp90/aalt 等）→ 同じ文字の既定字形と同じ変換
+   - 異体字（jp90 等）→ 同じ文字の既定字形と同じ変換
    - それ以外 → 同じ分類の代表値（中央値）。分類+幅区分 → 分類 → 上位グループ → 全体 の順にフォールバック。
      プロポーショナル版で仮名など MS 側がプロポーショナルな分類は、余白の代表値から送り幅を決める
 6. 3 次ベジエを 2 次（TrueType）に変換して保存
@@ -104,13 +133,13 @@ cp /path/to/msgothic.ttc /path/to/msmincho.ttc fonts/ms/
 # Noto CJK (OTC) を fonts/noto/ に置く
 scripts/fetch_noto.sh
 python3 scripts/analyze_ms.py          # MS 計測・分類
-python3 scripts/build.py -j 4          # 5 書体を dist/ に生成
-python3 scripts/make_ttc.py            # dist/NSGothic.ttc, dist/NSMincho.ttc にまとめる
+python3 scripts/build.py -j 4          # 5 種 × 7 ウェイト = 35 書体を build/ttf/ に生成
+python3 scripts/package.py             # dist/Regular/, dist/AllWeights/ に組み立て
 python3 scripts/compare.py             # 検証（任意）
 ```
 
-- `python3 scripts/make_ttc.py out.ttc a.ttf b.ttf ...` で任意の組み合わせの TTC も作れます
-- `--weights Regular,Bold` で Noto の Bold を原本にした太字も生成できます（寸法は MS の Regular に合わせます）
+- `build.py --weights Regular,Bold` のようにウェイトを限定できます。`build.py Gothic PGothic` で書体も限定できます
+- `python3 scripts/package.py out.ttc a.ttf b.ttf ...` で任意の TTF を 1 つの TTC にまとめられます
 
 ## 注意・制限
 

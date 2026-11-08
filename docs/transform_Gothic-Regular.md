@@ -3,7 +3,7 @@
 - 原本: `NotoSansCJK-Regular.ttc` (Noto CJK JP)
 - メトリクス基準: MS Gothic
 - 半角/全角字形への差し替え: {'hwid': 400, 'fwid': 16}
-- グリフ毎の変換方式の内訳: {'paired-empty': 2, 'paired-center': 14696, 'paired-baseline': 356, 'paired-exact': 150, 'fallback': 20919, 'fallback-empty': 2, 'decomposed': 305, 'variant': 15150}
+- グリフ毎の変換方式の内訳: {'paired-empty': 2, 'paired-center': 14696, 'paired-baseline': 356, 'paired-exact': 150, 'fallback': 654, 'fallback-empty': 1, 'decomposed': 244, 'variant': 188}
 
 `scale` は分類共通倍率 (MS 字面最大寸法 / Noto 字面最大寸法 の中央値)。
 `sx`/`sy`/`dy`/`dcx`/`dlsb`/`drsb` は MS 非収録字に使う代表値（1000 upem 単位）。

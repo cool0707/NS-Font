@@ -13,10 +13,10 @@
    "paired-center": 14714,
    "paired-baseline": 356,
    "paired-exact": 150,
-   "fallback": 21132,
-   "fallback-empty": 2,
-   "decomposed": 302,
-   "variant": 13812
+   "fallback": 648,
+   "fallback-empty": 1,
+   "decomposed": 242,
+   "variant": 188
   }
  },
  "classes": [

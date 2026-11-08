@@ -3,7 +3,7 @@
 fonts/ms/
 *.ttc
 # ただし生成したまとめ版は配布物なのでコミットする
-!dist/NS*.ttc
+!dist/**/*.ttc
 msgothic*
 msmincho*
 # MS フォントから抽出したグリフ単位の生データ
