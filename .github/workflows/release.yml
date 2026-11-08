@@ -1,0 +1,45 @@
+# v* タグを push すると dist/ のフォントを添付した GitHub Release を作成する
+name: Release
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "リリースするタグ (例: v1.000)"
+        required: true
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.tag || github.ref }}
+
+      - name: Make zip archives
+        run: |
+          set -eu
+          mkdir -p out
+          cp dist/Regular/* dist/AllWeights/* out/
+          for set in Regular AllWeights; do
+            rm -rf "pkg/NS-Font-$set" && mkdir -p "pkg/NS-Font-$set"
+            cp dist/$set/* OFL.txt "pkg/NS-Font-$set/"
+            (cd pkg && zip -q -r "../out/NS-Font-$set.zip" "NS-Font-$set")
+          done
+          ls -l out
+
+      - name: Create or update release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ inputs.tag || github.ref_name }}
+        run: |
+          set -eu
+          if ! gh release view "$TAG" >/dev/null 2>&1; then
+            gh release create "$TAG" --title "NS-Font $TAG" --notes-file .github/release-notes.md --latest
+          fi
+          gh release upload "$TAG" out/* --clobber

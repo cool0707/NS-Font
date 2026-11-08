@@ -6,6 +6,24 @@ Noto Sans CJK JP / Noto Serif CJK JP を改造し、**MS ゴシック・MS P ゴ
 
 Noto にある全ウェイト（ゴシック 7 段階・明朝 7 段階）を、それぞれ MS 系の寸法に合わせて作っています。
 
+## ダウンロード
+
+**[最新リリース](https://github.com/cool0707/NS-Font/releases/latest)** から入手できます。
+
+| 用途 | ダウンロード |
+|---|---|
+| レギュラーのみ一式 | [NS-Font-Regular.zip](https://github.com/cool0707/NS-Font/releases/latest/download/NS-Font-Regular.zip) |
+| 全ウェイト一式 | [NS-Font-AllWeights.zip](https://github.com/cool0707/NS-Font/releases/latest/download/NS-Font-AllWeights.zip) |
+| ゴシック 等幅+P（レギュラー） | [NSGothic-NSPGothic-Regular.ttc](https://github.com/cool0707/NS-Font/releases/latest/download/NSGothic-NSPGothic-Regular.ttc) |
+| 明朝 等幅+P（レギュラー） | [NSMincho-NSPMincho-Regular.ttc](https://github.com/cool0707/NS-Font/releases/latest/download/NSMincho-NSPMincho-Regular.ttc) |
+| UI Gothic（レギュラー） | [NSUIGothic-Regular.ttf](https://github.com/cool0707/NS-Font/releases/latest/download/NSUIGothic-Regular.ttf) |
+| ゴシック 等幅+P（全ウェイト） | [NSGothic-NSPGothic-AllWeights.ttc](https://github.com/cool0707/NS-Font/releases/latest/download/NSGothic-NSPGothic-AllWeights.ttc) |
+| 明朝 等幅+P（全ウェイト） | [NSMincho-NSPMincho-AllWeights.ttc](https://github.com/cool0707/NS-Font/releases/latest/download/NSMincho-NSPMincho-AllWeights.ttc) |
+| UI Gothic（全ウェイト） | [NSUIGothic-AllWeights.ttc](https://github.com/cool0707/NS-Font/releases/latest/download/NSUIGothic-AllWeights.ttc) |
+
+下の「配布ファイル」にある他のファイルも、同じリリースに個別に添付しています。
+リリースは `v*` タグの push で GitHub Actions（`.github/workflows/release.yml`）が自動作成します。
+
 ## 配布ファイル
 
 ### `dist/Regular/` — レギュラーのみ
