@@ -22,7 +22,7 @@ Noto にある全ウェイト（ゴシック 7 段階・明朝 7 段階）を、
 | UI Gothic（全ウェイト） | [NSUIGothic-AllWeights.ttc](https://github.com/cool0707/NS-Font/releases/latest/download/NSUIGothic-AllWeights.ttc) |
 
 下の「配布ファイル」にある他のファイルも、同じリリースに個別に添付しています。
-リリースは `v*` タグの push で GitHub Actions（`.github/workflows/release.yml`）が自動作成します。
+リリースは GitHub Actions（`.github/workflows/release.yml`）で作成します（`v*` タグの push、または Actions 画面からタグ名を指定して手動実行）。
 
 ## 配布ファイル
 

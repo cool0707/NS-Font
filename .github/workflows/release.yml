@@ -1,4 +1,6 @@
-# v* タグを push すると dist/ のフォントを添付した GitHub Release を作成する
+# dist/ のフォントを添付した GitHub Release を作成する
+#   - v* タグを push したとき
+#   - Actions 画面から手動実行したとき（指定したタグを実行中のコミットに作成）
 name: Release
 
 on:
@@ -18,8 +20,6 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-        with:
-          ref: ${{ inputs.tag || github.ref }}
 
       - name: Make zip archives
         run: |
@@ -40,6 +40,8 @@ jobs:
         run: |
           set -eu
           if ! gh release view "$TAG" >/dev/null 2>&1; then
-            gh release create "$TAG" --title "NS-Font $TAG" --notes-file .github/release-notes.md --latest
+            # タグが無ければ実行中のコミットにタグを作成する（手動実行の場合）
+            gh release create "$TAG" --target "$GITHUB_SHA" --title "NS-Font $TAG" \
+              --notes-file .github/release-notes.md --latest
           fi
           gh release upload "$TAG" out/* --clobber
