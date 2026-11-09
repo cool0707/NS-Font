@@ -1,2 +1,4 @@
 fonttools>=4.47
+brotli            # WOFF2
+cffsubr           # OTF のサブルーチン化（任意）
 pillow>=10        # scripts/compare.py のみ
