@@ -13,11 +13,16 @@ dist/AllWeights/  Noto にある全ウェイト入り（TTC）
     NSGothic-NSPGothic-AllWeights.ttc     等幅 + プロポーショナル × 全ウェイト
     NSUIGothic-AllWeights.ttc             UI × 全ウェイト
     （明朝も同様）
+dist/Regular-JPVariants/  レギュラーの日本語異体字追加版（build/jpvar/ ← scripts/variants.py）
+    NSGothic-Regular-JPVariants.ttf ... / NSGothic-NSPGothic-Regular-JPVariants.ttc など
+dist/OTF/    dist/Regular/ と dist/Regular-JPVariants/ の TTF を OTF (CFF) にしたもの
+dist/WOFF2/  同じく WOFF2 にしたもの（Web フォント用）
 
 TTC では、同じウェイト内で輪郭が同一のグリフ（漢字など）は等幅/プロポーショナル間で
 グリフ ID を共有させ、glyf/loca を 1 つにまとめてサイズを抑える。
 
   python3 scripts/package.py                       # 上記を全部作る
+  python3 scripts/package.py --only jpvar,otf,woff2  # 一部だけ作る（ttf / jpvar / otf / woff2）
   python3 scripts/package.py out.ttc a.ttf b.ttf   # 任意の TTF を 1 グループ（glyf 共有）でまとめる
 """
 import os
@@ -28,6 +33,7 @@ from fontTools.ttLib import TTFont, TTCollection
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from build import WEIGHTS  # noqa: E402
+from variants import SUFFIX  # noqa: E402
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SRC = os.path.join(ROOT, "build", "ttf")
@@ -130,10 +136,65 @@ def ttf(fam, w):
     return os.path.join(SRC, f"{fam}-{w}.ttf")
 
 
+def package_jpvariants():
+    """build/jpvar/ の異体字追加版（レギュラー）を dist/Regular-JPVariants/ に置く。"""
+    src = os.path.join(ROOT, "build", "jpvar")
+    out = os.path.join(DIST, "Regular" + SUFFIX)
+    os.makedirs(out, exist_ok=True)
+    for fixed, prop, _ in SETS:
+        paths = [os.path.join(src, f"{f}-Regular{SUFFIX}.ttf") for f in (fixed, prop) if f]
+        if not all(os.path.exists(p) for p in paths):
+            print(f"skip {paths}: scripts/variants.py を先に実行してください", file=sys.stderr)
+            continue
+        for p in paths:
+            shutil.copy2(p, out)
+            print(os.path.relpath(os.path.join(out, os.path.basename(p)), ROOT), flush=True)
+        if fixed:
+            make_ttc([paths], os.path.join(out, f"{fixed}-{prop}-Regular{SUFFIX}.ttc"))
+
+
+def _convert(job):
+    import convert
+    kind, src, out = job
+    dst = os.path.join(out, os.path.splitext(os.path.basename(src))[0] + "." + kind)
+    (convert.to_otf if kind == "otf" else convert.to_woff2)(src, dst)
+    return f"{os.path.relpath(dst, ROOT)}: {os.path.getsize(dst) / 1e6:.1f} MB"
+
+
+def package_converted(kinds, jobs=os.cpu_count()):
+    """dist/Regular/ と dist/Regular-JPVariants/ の TTF を OTF / WOFF2 にする。"""
+    import glob
+    from multiprocessing import Pool
+    srcs = sorted(glob.glob(os.path.join(DIST, "Regular", "*.ttf")) +
+                  glob.glob(os.path.join(DIST, "Regular" + SUFFIX, "*.ttf")))
+    work = []
+    for kind in kinds:
+        out = os.path.join(DIST, kind.upper())
+        os.makedirs(out, exist_ok=True)
+        work += [(kind, s, out) for s in srcs]
+    work.sort(key=lambda j: (j[0] != "otf", "Mincho" not in j[1]))     # 時間のかかるものから
+    with Pool(max(1, jobs or 1)) as pool:
+        for msg in pool.imap_unordered(_convert, work):
+            print(msg, flush=True)
+
+
 def main():
-    if len(sys.argv) > 2:
+    only = None
+    if len(sys.argv) > 2 and sys.argv[1] == "--only":
+        only = set(sys.argv[2].split(","))
+    elif len(sys.argv) > 2:
         make_ttc([sys.argv[2:]], sys.argv[1])
         return
+    if only is None or "ttf" in only:
+        package_ttf()
+    if only is None or "jpvar" in only:
+        package_jpvariants()
+    kinds = [k for k in ("otf", "woff2") if only is None or k in only]
+    if kinds:
+        package_converted(kinds)
+
+
+def package_ttf():
     reg, allw = os.path.join(DIST, "Regular"), os.path.join(DIST, "AllWeights")
     os.makedirs(reg, exist_ok=True)
     for fixed, prop, noto in SETS:

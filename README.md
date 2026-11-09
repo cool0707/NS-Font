@@ -14,6 +14,9 @@ Noto にある全ウェイト（ゴシック 7 段階・明朝 7 段階）を、
 |---|---|
 | レギュラーのみ一式 | [NS-Font-Regular.zip](https://github.com/cool0707/NS-Font/releases/latest/download/NS-Font-Regular.zip) |
 | 全ウェイト一式 | [NS-Font-AllWeights.zip](https://github.com/cool0707/NS-Font/releases/latest/download/NS-Font-AllWeights.zip) |
+| 日本語異体字追加版（レギュラー）一式 | [NS-Font-Regular-JPVariants.zip](https://github.com/cool0707/NS-Font/releases/latest/download/NS-Font-Regular-JPVariants.zip) |
+| OTF 版（レギュラー・異体字追加版）一式 | [NS-Font-Regular-OTF.zip](https://github.com/cool0707/NS-Font/releases/latest/download/NS-Font-Regular-OTF.zip) |
+| WOFF2 版（レギュラー・異体字追加版）一式 | [NS-Font-Regular-WOFF2.zip](https://github.com/cool0707/NS-Font/releases/latest/download/NS-Font-Regular-WOFF2.zip) |
 | ゴシック 等幅+P（レギュラー） | [NSGothic-NSPGothic-Regular.ttc](https://github.com/cool0707/NS-Font/releases/latest/download/NSGothic-NSPGothic-Regular.ttc) |
 | 明朝 等幅+P（レギュラー） | [NSMincho-NSPMincho-Regular.ttc](https://github.com/cool0707/NS-Font/releases/latest/download/NSMincho-NSPMincho-Regular.ttc) |
 | UI Gothic（レギュラー） | [NSUIGothic-Regular.ttf](https://github.com/cool0707/NS-Font/releases/latest/download/NSUIGothic-Regular.ttf) |
@@ -37,6 +40,41 @@ Noto にある全ウェイト（ゴシック 7 段階・明朝 7 段階）を、
 | `NSMincho-Regular.ttf` | NS 明朝（等幅） |
 | `NSPMincho-Regular.ttf` | NS P明朝（プロポーショナル） |
 | `NSMincho-NSPMincho-Regular.ttc` | NS 明朝 + NS P明朝 |
+
+### `dist/Regular-JPVariants/` — 日本語異体字追加版（レギュラーのみ）
+
+`dist/Regular/` に、Noto CJK JP にある日本語の異体字を追加したものです（下記「日本語異体字追加版」）。
+
+| ファイル | 内容 |
+|---|---|
+| `NSGothic-Regular-JPVariants.ttf` | NS ゴシック（等幅）+ 異体字 |
+| `NSPGothic-Regular-JPVariants.ttf` | NS Pゴシック + 異体字 |
+| `NSGothic-NSPGothic-Regular-JPVariants.ttc` | 上の 2 書体 |
+| `NSUIGothic-Regular-JPVariants.ttf` | NS UI Gothic + 異体字 |
+| `NSMincho-Regular-JPVariants.ttf` | NS 明朝（等幅）+ 異体字 |
+| `NSPMincho-Regular-JPVariants.ttf` | NS P明朝 + 異体字 |
+| `NSMincho-NSPMincho-Regular-JPVariants.ttc` | 上の 2 書体 |
+
+書体名は通常版と同じ（「NS ゴシック」など）なので、通常版の代わりにそのまま使えます。通常版と両方はインストールしないでください。
+
+### `dist/OTF/`・`dist/WOFF2/` — OTF 版・WOFF2 版（レギュラーのみ）
+
+`dist/Regular/` と `dist/Regular-JPVariants/` の各 TTF（5 書体 × 2 = 10 ファイル）を変換したものです。
+ファイル名は TTF と同じで拡張子だけ異なります（例: `NSGothic-Regular.otf`、`NSGothic-Regular-JPVariants.woff2`）。
+
+| 形式 | 内容 | 1 書体あたり |
+|---|---|---|
+| OTF | CFF（3 次ベジエ）アウトラインの OpenType。TrueType の輪郭を 3 次ベジエに戻し（qu2cu）、サブルーチン化。縦書き原点は VORG 表 | ゴシック 4.3 MB（異体字追加版 4.6 MB）、明朝 5.8 MB（6.3 MB） |
+| WOFF2 | Web フォント用。TTF をそのまま WOFF2 圧縮 | ゴシック 2.5 MB（2.7 MB）、明朝 3.3 MB（3.6 MB） |
+
+字形・送り幅・行メトリクス・GSUB は TTF と同一です（HarfBuzz で全収録字・各 feature の字形選択と送り幅が一致することを確認済み）。
+
+```css
+@font-face {
+  font-family: "NS Gothic";
+  src: url("NSGothic-Regular-JPVariants.woff2") format("woff2");
+}
+```
 
 ### `dist/AllWeights/` — Noto にある全ウェイト入り
 
@@ -72,6 +110,24 @@ Noto にある全ウェイト（ゴシック 7 段階・明朝 7 段階）を、
 異体字切替（`jp78`/`jp83`/`aalt`/`nlck`/`hist`）用の字形も除いています（`jp90`・縦書き・半角/全角切替は残しています）。
 これで 1 書体あたり約 5〜7 MB になり、全ウェイト入りの TTC も GitHub の 1 ファイル上限（100 MB）に収まります。
 Noto の全収録字を残したい場合は `scripts/build.py --full` でビルドできます（1 書体約 19〜26 MB）。
+
+### 日本語異体字追加版
+
+`dist/Regular-JPVariants/`（と、その OTF / WOFF2 版）には、通常版で除いている日本語の異体字を戻しています。
+収録漢字の範囲（13,160 字）は通常版と同じで、その字の異体字の字形を追加しています（ゴシック 1,135 グリフ、明朝 1,137 グリフ）。
+
+| 機能 | 内容 |
+|---|---|
+| 異体字セレクタ（IVS） | Adobe-Japan1 IVD の 14,543 組（例: 葛 + U+E0100/U+E0101、辻 の一点/二点しんにょう、吉/𠮷 の切替）。cmap format 14 |
+| `jp78` / `jp83` | JIS78 / JIS83 字形 |
+| `nlck` | 印刷標準字体（表外漢字字体表） |
+| `hist` | 歴史的字形 |
+| `aalt` | 異体字一覧（アプリの字形パレットなどで使われる） |
+
+- 追加した字形は、同じ文字の既定字形と同じ変換（大きさ・位置・送り幅・縦書きメトリクス）で MS 系の寸法に合わせています
+- 異体字を指定しない場合の表示（既定字形・縦書き・`jp90` 等）は通常版と完全に同じです
+- 作り方: `scripts/variants.py` が、通常版の TTF と Noto CJK 原本を比べて既定字形ごとの変換を求め、
+  異体字の字形に同じ変換を施して追加します（MS フォントは不要）
 
 ### Noto 欧文・記号系フォントによる補完
 
@@ -181,12 +237,16 @@ cp /path/to/msgothic.ttc /path/to/msmincho.ttc fonts/ms/
 scripts/fetch_noto.sh
 python3 scripts/analyze_ms.py          # MS 計測・分類
 python3 scripts/build.py -j 4          # 5 種 × 7 ウェイト = 35 書体を build/ttf/ に生成
-python3 scripts/package.py             # dist/Regular/, dist/AllWeights/ に組み立て
+python3 scripts/variants.py            # 日本語異体字追加版（レギュラー）を build/jpvar/ に生成
+python3 scripts/package.py             # dist/ に組み立て（Regular / AllWeights / Regular-JPVariants / OTF / WOFF2）
 python3 scripts/compare.py             # 検証（任意）
 ```
 
 - `build.py --weights Regular,Bold` のようにウェイトを限定できます。`build.py Gothic PGothic` で書体も限定できます
 - `python3 scripts/package.py out.ttc a.ttf b.ttf ...` で任意の TTF を 1 つの TTC にまとめられます
+- `python3 scripts/package.py --only jpvar,otf,woff2` のように一部だけ作れます（`ttf` / `jpvar` / `otf` / `woff2`）。
+  `scripts/variants.py` と OTF/WOFF2 化は `dist/Regular/` の TTF だけからでも動きます（`build/ttf/` が無い場合）
+- `python3 scripts/convert.py otf|woff2 出力先 a.ttf ...` で任意の TTF を変換できます（OTF のサブルーチン化に `cffsubr`、WOFF2 に `brotli` を使用）
 
 ## 注意・制限
 

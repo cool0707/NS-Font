@@ -25,10 +25,13 @@ jobs:
         run: |
           set -eu
           mkdir -p out
-          cp dist/Regular/* dist/AllWeights/* out/
-          for set in Regular AllWeights; do
+          cp dist/Regular/* dist/AllWeights/* dist/Regular-JPVariants/* dist/OTF/* dist/WOFF2/* out/
+          # zip 名 → dist/ のディレクトリ
+          for pair in Regular:Regular AllWeights:AllWeights Regular-JPVariants:Regular-JPVariants \
+                      Regular-OTF:OTF Regular-WOFF2:WOFF2; do
+            set=${pair%%:*}; dir=${pair#*:}
             rm -rf "pkg/NS-Font-$set" && mkdir -p "pkg/NS-Font-$set"
-            cp dist/$set/* OFL.txt "pkg/NS-Font-$set/"
+            cp dist/$dir/* OFL.txt "pkg/NS-Font-$set/"
             (cd pkg && zip -q -r "../out/NS-Font-$set.zip" "NS-Font-$set")
           done
           ls -l out
