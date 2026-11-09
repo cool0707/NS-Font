@@ -46,7 +46,7 @@ from fontTools.pens.recordingPen import RecordingPen  # noqa: E402
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 UPEM = 1000
-VERSION = "1.100"          # name ID 5 / head.fontRevision（リリースのタグ v1.100 と揃える）
+VERSION = "1.110"          # name ID 5 / head.fontRevision（リリースのタグ v1.110 と揃える）
 
 TARGETS = {
     # key: (MS 計測データ, Noto 原本ファイル(ウェイト置換用 {w}), 等幅か, 英名, 和名)
